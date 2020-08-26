@@ -324,7 +324,7 @@ const backupDashboardToS3IfChanged = async ({ dashboard, id, slug, environment, 
     return changed;
 };
 
-const promoteLookContent = async ({ fromToken, fromHost, toToken, toHost }) => {
+const promoteLookContent = async ({ fromToken, fromHost, toToken, toHost, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion }) => {
     await logger.logDebug({ message: `{ fromToken, fromHost, toToken, toHost } ${JSON.stringify({ fromToken, fromHost, toToken, toHost })}` });
     const fromDashboards = await getDashboards({ token: fromToken, host: fromHost });
     const fromDashboardsWithExtraInformation = await Promise.all(fromDashboards.map(async (item) => ({
@@ -375,7 +375,7 @@ const promoteLookContent = async ({ fromToken, fromHost, toToken, toHost }) => {
                         // back up destination look ml
                         dashboardData = JSON.stringify(toDashboardsWithExtraInformation.find((destinationDashboardItem) => item.to.id === destinationDashboardItem.id));
                         await logger.logDebug({ message: `Uploading destination dashboard to s3 for dashboard id ${JSON.stringify(item.to.id)}` });
-                        await backupDashboardToS3IfChanged({ dashboard: dashboardData, id: item.to.id, slug: item.to.slug, environment: toHost });
+                        await backupDashboardToS3IfChanged({ dashboard: dashboardData, id: item.to.id, slug: item.to.slug, environment: toHost, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion  });
                         await logger.logDebug({ message: `Uploaded destination dashboard to s3 for dashboard id ${JSON.stringify(item.to.id)}` });
                     }
 
@@ -522,9 +522,9 @@ const promoteLookml = async ({ repositoryKey, fromRepository, toRepository }) =>
     // promote dashboard content with looker deploy
 };
 
-export const promoteEnvironment = async ({ fromClientId, fromClientSecret, toClientId, toClientSecret, fromHost, toHost, repositoryKey, fromRepository, toRepository }) => {
+export const promoteEnvironment = async ({ fromClientId, fromClientSecret, toClientId, toClientSecret, fromHost, toHost, repositoryKey, fromRepository, toRepository, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion }) => {
     const toToken = await getLoginToken({ clientId: toClientId, clientSecret: toClientSecret, host: toHost });
     const fromToken = await getLoginToken({ clientId: fromClientId, clientSecret: fromClientSecret, host: fromHost });
-    await promoteLookContent({ fromToken, fromHost, toToken, toHost });
+    await promoteLookContent({ fromToken, fromHost, toToken, toHost, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion });
     await promoteLookml({ repositoryKey, fromRepository, toRepository });
 };
