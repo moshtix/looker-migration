@@ -3,7 +3,6 @@ import logger from 'logger';
 import { get } from 'object-path';
 import { runCommand } from 'helper-command';
 import { upload, getS3Object } from 'helper-content-s3';
-import configuration from 'Configuration';
 
 const fs = require('fs');
 const { execSync } = require('child_process');
@@ -290,15 +289,14 @@ export const createDashboard = async ({ fromDashboardId, toDashBoardId, fromToke
     }
 };
 
-const backupDashboardToS3IfChanged = async ({ dashboard, id, slug, environment }) => {
-    const accessKeyId = configuration.aws.awsAccessKey;
-    const secretAccessKey = configuration.aws.awsAccessSecret;
-    const bucket = configuration.aws.s3.awsLookerDeployBucketName;
-    const { region } = configuration.aws;
+const backupDashboardToS3IfChanged = async ({ dashboard, id, slug, environment, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion}) => {
+    const accessKeyId = awsAccessKey;
+    const secretAccessKey = awsAccessSecret;
+    const { region } = awsRegion;
 
     const fileName = `${environment}/${id}-${slug}.json`;
 
-    const existingJsonFile = await getS3Object({ bucket, region, accessKeyId, secretAccessKey, key: fileName });
+    const existingJsonFile = await getS3Object({ bucket: s3Bucket, region, accessKeyId, secretAccessKey, key: fileName });
     let changed;
 
     if (existingJsonFile === null) {
@@ -314,7 +312,7 @@ const backupDashboardToS3IfChanged = async ({ dashboard, id, slug, environment }
             changed = true;
             await upload({
                 key: fileName,
-                bucket,
+                bucket: s3Bucket,
                 data: Buffer.from(JSON.stringify(dashboard)),
                 contentType: 'application/json; charset=utf-8',
                 region,
