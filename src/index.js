@@ -509,11 +509,11 @@ const promoteLookml = async ({ repositoryKey, fromRepository, toRepository }) =>
     const workingGitDirectory = `/tmp/${fromRepository}`;
 
     // promote code in git
-    await runCommand(`git clone git@github.com:moshtix/${fromRepository}.git`, { cwd: '/tmp' });
+    await runCommand(`git clone git@github.com:${fromRepository}.git`, { cwd: '/tmp' });
     await runCommand(`ls ${workingGitDirectory}`, { cwd: workingGitDirectory });
     await runCommand('git pull', { cwd: workingGitDirectory });
     await runCommand('git status', { cwd: workingGitDirectory });
-    await runCommand(`git remote add stage git@github.com:moshtix/${toRepository}.git`, { cwd: workingGitDirectory });
+    await runCommand(`git remote add stage git@github.com:${toRepository}.git`, { cwd: workingGitDirectory });
     await runCommand('git remote -v', { cwd: workingGitDirectory });
     await runCommand('git pull stage master --ff-only --allow-unrelated-histories', { cwd: workingGitDirectory });
     await runCommand('git merge stage/master --allow-unrelated-histories', { cwd: workingGitDirectory });
