@@ -1,5 +1,4 @@
-import { promoteEnvironment } from 'MoshtixShared/helper-looker';
-import configuration from 'Configuration';
+import { promoteEnvironment } from './helpers/looker';
 var fs = require('fs').promises;
 
 export const execute = async () => {
@@ -9,15 +8,23 @@ export const execute = async () => {
     const awsAccessSecret = process.argv[3];
     const s3Bucket = process.argv[4];
     const awsRegion = process.argv[5];
+    const fromRepository = process.argv[6];
+    const fromClientId = process.argv[7];
+    const fromClientSecret = process.argv[8];
+    const fromHost = process.argv[9];
+    const toRepository = process.argv[10];
+    const toClientId = process.argv[11];
+    const toClientSecret = process.argv[12];
+    const toHost = process.argv[13];
     await promoteEnvironment({
-        fromRepository: configuration.looker.lookerStageRepository,
-        fromClientId: configuration.looker.lookerStageClientId,
-        fromClientSecret: configuration.looker.lookerStageClientSecret,
-        fromHost: configuration.looker.lookerStageHost,
-        toRepository: configuration.looker.lookerProductionRepository,
-        toClientId: configuration.looker.lookerProductionClientId,
-        toClientSecret: configuration.looker.lookerProductionClientSecret,
-        toHost: configuration.looker.lookerProductionHost,
+        fromRepository,
+        fromClientId,
+        fromClientSecret,
+        fromHost,
+        toRepository,
+        toClientId,
+        toClientSecret,
+        toHost,
         repositoryKey,
         awsAccessKey,
         awsAccessSecret,
