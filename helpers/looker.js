@@ -1,8 +1,8 @@
 /* eslint-disable camelcase */
 import logger from 'logger';
 import { get } from 'object-path';
-import { runCommand } from 'MoshtixShared/helper-command';
-import { upload, getS3Object } from 'MoshtixShared/helper-content-s3';
+import { runCommand } from 'helper-command';
+import { upload, getS3Object } from 'helper-content-s3';
 import configuration from 'Configuration';
 
 const fs = require('fs');
