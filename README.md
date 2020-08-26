@@ -39,6 +39,6 @@ toClientSecret = the client secret for interacting with the looker APU for the e
 toHost = the looker host migrating to
 ```
 
-Code migration by following the Import method. 
+Dashboard migration by following the Import method in gzr. 
 
 https://github.com/looker-open-source/gzr/blob/c0a4e8758203e8c22a36857b69d5d2d5867bc2c1/lib/gzr/commands/dashboard/import.rb#L202
