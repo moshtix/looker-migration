@@ -1,7 +1,7 @@
 import { promoteEnvironment } from './helpers/looker';
 var fs = require('fs').promises;
 
-export const execute = async () => {
+export const run = async () => {
     const pathToIdRsa = process.argv[1];
     const repositoryKey = await fs.readFile(pathToIdRsa, 'utf8');
     const awsAccessKey = process.argv[2];
@@ -33,4 +33,4 @@ export const execute = async () => {
     });
 };
 
-export default execute;
+run();
