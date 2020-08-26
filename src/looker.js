@@ -1,8 +1,8 @@
 /* eslint-disable camelcase */
-import logger from './logger';
+import logger from './helpers/logger';
 import { get } from 'object-path';
-import { runCommand } from './command-runner';
-import { upload, getS3Object } from './helper-content-s3';
+import { runCommand } from './helpers/command-runner';
+import { upload, getS3Object } from './helpers/helper-content-s3';
 
 const fs = require('fs');
 const { execSync } = require('child_process');

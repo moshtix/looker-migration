@@ -1,4 +1,4 @@
-import { promoteEnvironment } from './helpers/looker';
+import { promoteEnvironment } from '../src/looker';
 var fs = require('fs').promises;
 
 export const run = async () => {
