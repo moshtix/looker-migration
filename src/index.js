@@ -8,8 +8,6 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 
 const https = require('https');
-const crypto = require('crypto');
-const querystring = require('querystring');
 
 const port = 19999;
 
@@ -419,81 +417,6 @@ const promoteLookContent = async ({ fromToken, fromHost, toToken, toHost, awsAcc
                 }
             }));
 };
-
-const nonce = (len) => {
-    let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-    // eslint-disable-next-line no-plusplus
-    for (let i = 0; i < len; i++) { text += possible.charAt(Math.floor(Math.random() * possible.length)); }
-    return text;
-};
-
-const forceUnicodeEncoding = (string) => decodeURIComponent(encodeURIComponent(string));
-
-export const createSSOUrl = async (options) => {
-    const { secret } = options;
-
-    // user options
-    const json_external_user_id = JSON.stringify(options.external_user_id);
-    const json_first_name = JSON.stringify(options.first_name);
-    const json_last_name = JSON.stringify(options.last_name);
-    const json_permissions = JSON.stringify(options.permissions);
-    const json_models = JSON.stringify(options.models);
-    const json_group_ids = JSON.stringify(options.group_ids);
-    const json_external_group_id = JSON.stringify(options.external_group_id || '');
-    const json_user_attributes = JSON.stringify(options.user_attributes || {});
-    const json_access_filters = JSON.stringify(options.access_filters);
-
-    // url/session specific options
-    const embed_path = `/login/embed/${encodeURIComponent(options.embed_url)}`;
-    const json_session_length = JSON.stringify(options.session_length);
-    const json_force_logout_login = JSON.stringify(options.force_logout_login);
-
-    // computed options
-    const json_time = JSON.stringify(Math.floor((new Date()).getTime() / 1000));
-    const json_nonce = JSON.stringify(nonce(16));
-
-    // compute signature
-    let string_to_sign = '';
-    string_to_sign += `${options.host}\n`;
-    string_to_sign += `${embed_path}\n`;
-    string_to_sign += `${json_nonce}\n`;
-    string_to_sign += `${json_time}\n`;
-    string_to_sign += `${json_session_length}\n`;
-    string_to_sign += `${json_external_user_id}\n`;
-    string_to_sign += `${json_permissions}\n`;
-    string_to_sign += `${json_models}\n`;
-    string_to_sign += `${json_group_ids}\n`;
-    string_to_sign += `${json_external_group_id}\n`;
-    string_to_sign += `${json_user_attributes}\n`;
-    string_to_sign += json_access_filters;
-
-    const signature = crypto.createHmac('sha1', secret).update(forceUnicodeEncoding(string_to_sign)).digest('base64').trim();
-
-    // construct query string
-    const query_params = {
-        nonce: json_nonce,
-        time: json_time,
-        session_length: json_session_length,
-        external_user_id: json_external_user_id,
-        permissions: json_permissions,
-        models: json_models,
-        access_filters: json_access_filters,
-        first_name: json_first_name,
-        last_name: json_last_name,
-        group_ids: json_group_ids,
-        external_group_id: json_external_group_id,
-        user_attributes: json_user_attributes,
-        force_logout_login: json_force_logout_login,
-        signature,
-    };
-
-    const query_string = querystring.stringify(query_params);
-
-    return `https://${options.host + embed_path}?${query_string}`;
-};
-
 
 const addRequiredFiles = async ({ repositoryKey }) => {
     fs.writeFileSync('/tmp/known_hosts', 'github.com,192.30.252.*,192.30.253.*,192.30.254.*,192.30.255.* ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==');
