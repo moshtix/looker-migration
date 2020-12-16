@@ -44,7 +44,7 @@ Dashboard migration by following the Import method in gzr.
 
 https://github.com/looker-open-source/gzr/blob/c0a4e8758203e8c22a36857b69d5d2d5867bc2c1/lib/gzr/commands/dashboard/import.rb#L202
 
-### known issues
+### known issues
 
 - fails if attempting to sync outside of root shared folder. Needs matching folder id in destination. need to create folder during sync see https://moshtixdev.au.looker.com:19999/api-docs/index.html#!/3.1/Folder
 - some dashboards being updated when no changes.
