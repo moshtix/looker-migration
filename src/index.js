@@ -169,9 +169,9 @@ const logDashboards = async ({ dashboards }) => {
             },
             to:
             {
-                id: item.to.id,
-                slug: item.to.slug,
-                title: item.to.title,
+                id: get(item, 'to.id', null),
+                slug: get(item, 'to.slug', null),
+                title: get(item, 'to.title', null),
             },
         })), null, 2)}`,
     });
@@ -188,7 +188,7 @@ export const createDashboard = async ({ fromDashboardId, toDashBoardId, fromToke
     await logger.logDebug({ message: `adding ${sourceDashboardFilters.length} filters to dashboard ${destinationDashboardId}` });
     if (sourceDashboardFilters.length > 0) {
         sourceDashboardFilters = await Promise.all(sourceDashboardFilters.map(async (dashboardFilter) => {
-            const newDashboardFilter = {...dashboardFilter};
+            const newDashboardFilter = { ...dashboardFilter };
             await logger.logDebug({ message: `adding dashboardFilter.id ${dashboardFilter.id} from dashboard ${sourceDashboardId} to dashboard ${destinationDashboardId}` });
             newDashboardFilter.dashboard_id = destinationDashboardId;
             await addFilter({ token: toToken, host: toHost, data: newDashboardFilter });
@@ -203,7 +203,7 @@ export const createDashboard = async ({ fromDashboardId, toDashBoardId, fromToke
         // https://github.com/looker-open-source/gzr/blob/c0a4e8758203e8c22a36857b69d5d2d5867bc2c1/lib/gzr/commands/dashboard/import.rb#L202
         sourceDashboardElements = await Promise.all(sourceDashboardElements.map(async (dashboardElement) => {
             // looks
-            const newDashboardElement = {...dashboardElement};
+            const newDashboardElement = { ...dashboardElement };
             const sourceLook = dashboardElement.look;
             if (sourceLook) {
                 await logger.logDebug({ message: `adding sourceLook ${JSON.stringify(sourceLook)}` });
@@ -279,7 +279,7 @@ export const createDashboard = async ({ fromDashboardId, toDashBoardId, fromToke
     await logger.logDebug({ message: `adding ${sourceDashboardLayouts.length} layouts to dashboard ${destinationDashboardId}` });
     if (sourceDashboardLayouts.length > 0) {
         await Promise.all(sourceDashboardLayouts.map(async (dashboardLayout) => {
-            const newDashboardLayout = {...dashboardLayout};
+            const newDashboardLayout = { ...dashboardLayout };
             await logger.logDebug({ message: `adding dashboardLayout.id ${dashboardLayout.id} from dashboard ${sourceDashboardId} to dashboard ${destinationDashboardId}` });
             newDashboardLayout.dashboard_id = destinationDashboardId;
             await addLayout({ token: toToken, host: toHost, data: newDashboardLayout });
@@ -287,14 +287,23 @@ export const createDashboard = async ({ fromDashboardId, toDashBoardId, fromToke
     }
 };
 
-const backupDashboardToS3IfChanged = async ({ dashboard, id, slug, environment, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion}) => {
+const backupDashboardToS3IfChanged = async ({ dashboard, id, slug, environment, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion }) => {
+
+    logger.logDebug({ message: 'Backing up dashboard ' + JSON.stringify({ id, slug, environment, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion }) });
+
     const accessKeyId = awsAccessKey;
     const secretAccessKey = awsAccessSecret;
     const { region } = awsRegion;
 
     const fileName = `${environment}/${id}-${slug}.json`;
 
-    const existingJsonFile = await getS3Object({ bucket: s3Bucket, region, accessKeyId, secretAccessKey, key: fileName });
+    let existingJsonFile = null;
+    try {
+        existingJsonFile = await getS3Object({ bucket: s3Bucket, region, accessKeyId, secretAccessKey, key: fileName });
+    }
+    catch (error) {
+        logger.logDebug({ message: 'back up dashboard id: ' + id + ' error ' + JSON.stringify(error) });
+    }
     let changed;
 
     if (existingJsonFile === null) {
@@ -367,13 +376,13 @@ const promoteLookContent = async ({ fromToken, fromHost, toToken, toHost, awsAcc
                 const data = fromDashboardsWithExtraInformation.find((devDash) => devDash.id === sourceDashboardId);
                 // back up source look ml
                 let dashboardData = JSON.stringify(fromDashboardsWithExtraInformation.find((sourceDashboardItem) => item.from.id === sourceDashboardItem.id));
-                const dashboardChanged = await backupDashboardToS3IfChanged({ dashboard: dashboardData, id: sourceDashboardId, slug: item.from.slug, environment: fromHost });
+                const dashboardChanged = await backupDashboardToS3IfChanged({ dashboard: dashboardData, id: sourceDashboardId, slug: item.from.slug, environment: fromHost, awsRegion, awsAccessKey, awsAccessSecret, s3Bucket });
                 if (dashboardChanged) {
                     if (item.existsInDestination) {
                         // back up destination look ml
                         dashboardData = JSON.stringify(toDashboardsWithExtraInformation.find((destinationDashboardItem) => item.to.id === destinationDashboardItem.id));
                         await logger.logDebug({ message: `Uploading destination dashboard to s3 for dashboard id ${JSON.stringify(item.to.id)}` });
-                        await backupDashboardToS3IfChanged({ dashboard: dashboardData, id: item.to.id, slug: item.to.slug, environment: toHost, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion  });
+                        await backupDashboardToS3IfChanged({ dashboard: dashboardData, id: item.to.id, slug: item.to.slug, environment: toHost, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion });
                         await logger.logDebug({ message: `Uploaded destination dashboard to s3 for dashboard id ${JSON.stringify(item.to.id)}` });
                     }
 
@@ -406,10 +415,10 @@ const promoteLookContent = async ({ fromToken, fromHost, toToken, toHost, awsAcc
                         }
                     } else {
                         // create board
-                        await logger.logDebug({ message: `creating board ${JSON.stringify(item)}` });
+                        await logger.logDebug({ message: `creating board in destination for ${item.from.id} - ${data.id}` });
                         // add dashboard
                         const newDashboard = await addDashboard({ token: toToken, host: toHost, data });
-                        await logger.logDebug({ message: `newDashboard ${JSON.stringify(newDashboard)}` });
+                        await logger.logDebug({ message: `newDashboard from ${item.from.id} - ${data.id} new ${JSON.stringify(newDashboard)}` });
                         destinationDashboardId = newDashboard.id;
                     }
                     // create dashboard elements/layout/filters
@@ -424,16 +433,23 @@ const addRequiredFiles = async ({ repositoryKey }) => {
     execSync('chmod 400 /tmp/id_rsa', { encoding: 'utf8', stdio: 'inherit' });
 };
 
-const promoteLookml = async ({ repositoryKey, fromRepository, toRepository }) => {
-    await runCommand('rm -rf /tmp/*');
+const promoteLookml = async ({ repositoryKey, fromRepository: fullRepositoryName, toRepository }) => {
+
+    const fullRepositoryParts = fullRepositoryName.split('/');
+    // const repositoryCompany = fullRepositoryParts[0];
+    const repositoryName = fullRepositoryParts[1];
+
+    await runCommand(`rm -rf /tmp/${repositoryName}`);
     await addRequiredFiles({ repositoryKey });
 
     process.env.GIT_SSH_COMMAND = 'ssh -i /tmp/id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/tmp/known_hosts';
-    const workingGitDirectory = `/tmp/${fromRepository}`;
+    const workingGitDirectory = `/tmp/${repositoryName}`;
+
+    await logger.logDebug({ message: `git clone git@github.com:${fullRepositoryName}.git` });
 
     // promote code in git
-    await runCommand(`git clone git@github.com:${fromRepository}.git`, { cwd: '/tmp' });
-    await runCommand(`ls ${workingGitDirectory}`, { cwd: workingGitDirectory });
+    await runCommand(`git clone git@github.com:${fullRepositoryName}.git`, { cwd: '/tmp' });
+    await runCommand(`ls ${workingGitDirectory} `, { cwd: workingGitDirectory });
     await runCommand('git pull', { cwd: workingGitDirectory });
     await runCommand('git status', { cwd: workingGitDirectory });
     await runCommand(`git remote add stage git@github.com:${toRepository}.git`, { cwd: workingGitDirectory });
