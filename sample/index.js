@@ -4,7 +4,6 @@ var fs = require('fs').promises;
 
 export const run = async () => {
     const pathToIdRsa = process.argv[2];
-    const repositoryKey = await fs.readFile(pathToIdRsa, 'utf8');
     const awsAccessKey = process.argv[3];
     const awsAccessSecret = process.argv[4];
     const s3Bucket = process.argv[5];
@@ -17,25 +16,30 @@ export const run = async () => {
     const toClientId = process.argv[12];
     const toClientSecret = process.argv[13];
     const toHost = process.argv[14];
+    const promoteLookContent = process.argv[15];
+    const promoteLookml = process.argv[16];
 
-    logger.logDebug({
+    await logger.logDebug({
         message: 'object ' + JSON.stringify({
             fromRepository,
             fromClientId,
-            fromClientSecret,
+            fromClientSecret: '*************',
             fromHost,
             toRepository,
             toClientId,
-            toClientSecret,
+            toClientSecret: '*************',
             toHost,
             pathToIdRsa,
             awsAccessKey,
-            awsAccessSecret,
+            awsAccessSecret: '************',
             s3Bucket,
-            awsRegion
-        }, null, 2)});
+            awsRegion,
+            promoteLookContent,
+            promoteLookml
+        }, null, 2)
+    });
+    const repositoryKey = await fs.readFile(pathToIdRsa, 'utf8');
 
-    
     await promoteEnvironment({
         fromRepository,
         fromClientId,
@@ -49,7 +53,9 @@ export const run = async () => {
         awsAccessKey,
         awsAccessSecret,
         s3Bucket,
-        awsRegion
+        awsRegion,
+        runPromoteLookContent: promoteLookContent === undefined ? true : promoteLookContent === 'yes',
+        runPromoteLookml: promoteLookml === undefined ? true : promoteLookml === 'yes'
     });
 };
 

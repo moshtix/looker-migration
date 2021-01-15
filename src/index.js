@@ -22,8 +22,6 @@ const genericRequest = ({ path, token, method, data, host }) => new Promise((res
         method,
     };
 
-    logger.logDebug({ message: `options ${JSON.stringify(options)}` });
-
     const req = https.request(options, (res) => {
         res.setEncoding('utf8');
         let dataResult = '';
@@ -289,7 +287,7 @@ export const createDashboard = async ({ fromDashboardId, toDashBoardId, fromToke
 
 const backupDashboardToS3IfChanged = async ({ dashboard, id, slug, environment, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion }) => {
 
-    logger.logDebug({ message: 'Backing up dashboard ' + JSON.stringify({ id, slug, environment, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion }) });
+    logger.logDebug({ message: 'Backing up dashboard ' + JSON.stringify({ id, slug, environment, s3Bucket, awsRegion }) });
 
     const accessKeyId = awsAccessKey;
     const secretAccessKey = awsAccessSecret;
@@ -332,7 +330,6 @@ const backupDashboardToS3IfChanged = async ({ dashboard, id, slug, environment, 
 };
 
 const promoteLookContent = async ({ fromToken, fromHost, toToken, toHost, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion }) => {
-    await logger.logDebug({ message: `{ fromToken, fromHost, toToken, toHost } ${JSON.stringify({ fromToken, fromHost, toToken, toHost })}` });
     const fromDashboards = await getDashboards({ token: fromToken, host: fromHost });
     const fromDashboardsWithExtraInformation = await Promise.all(fromDashboards.map(async (item) => ({
         ...(await getDashboard({ host: fromHost, token: fromToken, id: item.id })),
@@ -454,16 +451,21 @@ const promoteLookml = async ({ repositoryKey, fromRepository: fullRepositoryName
     await runCommand('git status', { cwd: workingGitDirectory });
     await runCommand(`git remote add stage git@github.com:${toRepository}.git`, { cwd: workingGitDirectory });
     await runCommand('git remote -v', { cwd: workingGitDirectory });
-    await runCommand('git pull stage master --ff-only --allow-unrelated-histories', { cwd: workingGitDirectory });
+    // await runCommand('git pull stage master --ff-only --allow-unrelated-histories', { cwd: workingGitDirectory });
+    await runCommand('git pull stage master --allow-unrelated-histories', { cwd: workingGitDirectory });
     await runCommand('git merge stage/master --allow-unrelated-histories', { cwd: workingGitDirectory });
     await runCommand('git push stage master', { cwd: workingGitDirectory });
 
     // promote dashboard content with looker deploy
 };
 
-export const promoteEnvironment = async ({ fromClientId, fromClientSecret, toClientId, toClientSecret, fromHost, toHost, repositoryKey, fromRepository, toRepository, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion }) => {
+export const promoteEnvironment = async ({ runPromoteLookContent, runPromoteLookml, fromClientId, fromClientSecret, toClientId, toClientSecret, fromHost, toHost, repositoryKey, fromRepository, toRepository, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion }) => {
     const toToken = await getLoginToken({ clientId: toClientId, clientSecret: toClientSecret, host: toHost });
     const fromToken = await getLoginToken({ clientId: fromClientId, clientSecret: fromClientSecret, host: fromHost });
-    await promoteLookContent({ fromToken, fromHost, toToken, toHost, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion });
-    await promoteLookml({ repositoryKey, fromRepository, toRepository });
+    if (runPromoteLookContent) {
+        await promoteLookContent({ fromToken, fromHost, toToken, toHost, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion });
+    }
+    if (runPromoteLookml) {
+        await promoteLookml({ repositoryKey, fromRepository, toRepository });
+    }
 };
