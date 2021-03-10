@@ -459,13 +459,6 @@ const promoteLookml = async ({ repositoryKey, fromRepository: fullRepositoryName
     // promote dashboard content with looker deploy
 };
 
-export const promoteEnvironment = async ({ runPromoteLookContent, runPromoteLookml, fromClientId, fromClientSecret, toClientId, toClientSecret, fromHost, toHost, repositoryKey, fromRepository, toRepository, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion }) => {
-    const toToken = await getLoginToken({ clientId: toClientId, clientSecret: toClientSecret, host: toHost });
-    const fromToken = await getLoginToken({ clientId: fromClientId, clientSecret: fromClientSecret, host: fromHost });
-    if (runPromoteLookContent) {
-        await promoteLookContent({ fromToken, fromHost, toToken, toHost, awsAccessKey, awsAccessSecret, s3Bucket, awsRegion });
-    }
-    if (runPromoteLookml) {
-        await promoteLookml({ repositoryKey, fromRepository, toRepository });
-    }
+export const promoteEnvironment = async ({ repositoryKey, fromRepository, toRepository }) => {
+    await promoteLookml({ repositoryKey, fromRepository, toRepository });
 };
